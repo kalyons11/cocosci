@@ -1,0 +1,19 @@
+6.804 Project Proposal
+Luke Luneau (lluneau@mit.edu) | Kevin Lyons (kalyons@mit.edu)
+
+
+Branching off of the “Tug-of-War” game from lecture, we intend to create a probabilistic model to analyze and predict NBA gameplay and game outcomes with current player statistics, such as player efficiency rating, points-per-game, assists, and so on. Furthermore, this leads to a new opportunity for measuring human causal reasoning by querying a human about who will win the game before the game is completed. Since a basketball game consists of 48 minutes, we can ask test subjects to predict the winner at various times throughout the game and we can vary the priors that they receive during this inference (player stats).  
+
+We will build a simple probabilistic model in pyro, a universal PPL written in Python. We will then compare the results of this model with real NBA data, taken from this Kaggle source (will most likely only use 2016-2017 data). We will use Python and pandas for the processing of that data. In addition, we would like to gather responses from human subjects (i.e MIT peers) about how they think game outcomes will be affected by certain factors. We can use these diverse data sources to evaluate our probabilistic model and find opportunities for future extension.
+
+If the scope of the player set is too large, then we will narrow the available players for each team and ignore statistics that we don’t see fit for the model. There is a high likelihood that only the starters, a general “grade” for the bench, and a coaching grade will be used to train the model.
+
+In terms of the given project ideas, we feel this fits under the category of “using probabilistic programs to model some aspect of human causal reasoning.” We want to observe how people think NBA games are won and lost, and if that matches a probabilistic model of those games. For instance, do they value one superstar player over several average players? Do they consider long term player behavior or focus on short term success in an individual game? Etc. etc.
+
+We have some questions for the TA’s as we begin our brainstorming process. Here are a few.
+As we collect human insights, how do we account for potential biases in the sampled population? (i.e. athletes vs. non-athletes, timing, etc.)
+Do we actually “train” the probabilistic model on some data, or just let it run and exist within the computational framework? How does that work?
+Are there more specific aspects of human cognition that we should be focusing on?
+Can you help us get started with Pyro, as we have little experience with this powerful framework.
+
+We would appreciate feedback from the TA’s regarding how we can improve this project idea moving forward!
