@@ -1,0 +1,24 @@
+var model = function() {
+    var isSkilled = mem(function(p) { return flip(0.5) })
+    var weight = mem(function(p) { return exponential(0.1) })
+    var points = function(p) { return Gaussian({mu: weight(p) * isSkilled(p), sigma: 1}) }
+
+    observe(points('A'), 5)
+
+    return isSkilled('A')
+}
+
+var dist = Infer({method: 'MCMC', burn: 10000}, model)
+viz.auto(dist)
+
+
+// var model = function() {
+
+
+//     var t = exponential(1)
+
+//     t
+// }
+
+// var dist = Infer({method: 'MCMC', burn: 100000}, model)
+// viz.auto(dist)

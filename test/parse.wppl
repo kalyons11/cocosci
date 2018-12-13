@@ -1,0 +1,78 @@
+var options = {
+    method: 'MCMC',
+    burn: 10000,
+    lag: 100,
+    verbose: true,
+}
+
+var data = csv.read('../small.csv')
+var columns = data[0]
+
+var model = function() {
+    var skill = mem(function(player) {
+        return sample(Exponential({a: 1}))
+    })
+
+    var a = mem(function(player) { return sample(Exponential({a: 0.5})) })
+    var b = mem(function(player) { return sample(Exponential({a: 0.5})) })
+
+    var points = mem(function(player, game) {
+        return Gaussian({
+            mu: a(player) * skill(player),
+            sigma: 5
+        })
+    })
+
+    var assists = mem(function(player, game) {
+        return Gaussian({
+            mu: b(player) * skill(player),
+            sigma: 3,
+        })
+    })
+
+    mapN(function(index) {
+        if (index == 0)
+            return // Ignore column names
+        
+        // Condition on current player stats
+        var current = _.zipObject(columns, data[index])
+
+        mapObject(function(key) {
+            var value = current[key]
+            
+            if (key == 'playPTS') { // TODO REMOVE
+                observe(points(current['playDispNm'], current['gameNum']), value)
+            }
+
+            if (key == 'playAST') {
+                observe(assists(current['playDispNm'], current['gameNum']), value)
+            }
+
+        }, current)
+
+        // At end of game, conditon on win/loss
+        // TODO
+    }, data.length - 1)
+
+    // Return distributions
+    return skill('Kyrie Irving')
+    // return {
+    //     '1': skill('Aron Baynes'),
+    //     // '2': health('Jeff Green'),
+    //     '3': skill('Kyrie Irving'),
+    //     // '4': health('Lebron James'),
+    //     '5': a('Aron Baynes'),
+    //     // '6': b('Jeff Green'),
+    //     '7': a('Kyrie Irving'),
+    //     // '8': b('Lebron James'),
+    //     'random': a('new player'),
+    // }
+
+}
+
+var posterior = Infer(options, model)
+viz.density(posterior, {
+    bounds: [0, 20],
+})
+viz.marginals(posterior)
+viz.auto(posterior)
