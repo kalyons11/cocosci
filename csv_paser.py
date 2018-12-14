@@ -9,7 +9,7 @@ def parse(filename, stats):
     df = pd.read_csv(filename)
     segments = segment(df)
     # print(segments)
-    top7 = find_topk(df, segments)
+    top7 = find_topk(df, segments, category="playMin")
     # print(top7)
     create_csv(df, top7, stats)
 
@@ -82,7 +82,7 @@ def create_csv(df, top7, stats):
         teams[teamAbbr] += 1
 
     df = pd.DataFrame(data=d)
-    df.to_csv("theLeague.csv", index=False)
+    df.to_csv("theLeagueMinutes.csv", index=False)
 
 if __name__ == "__main__":
     filename = "./nba-players-stats/2017-18_playerBoxScore.csv"
