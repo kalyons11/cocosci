@@ -1,34 +1,17 @@
 var options = {
     method: 'MCMC',
-    burn: 10000,
+    burn: 10,
     lag: 100,
     verbose: true,
 }
 
-var data = csv.read('../small.csv')
+var data = csv.read('../new.csv')
 var columns = data[0]
 
-var model = function() {
-    var skill = mem(function(player) {
-        return sample(Exponential({a: 1}))
-    })
 
-    var a = mem(function(player) { return sample(Exponential({a: 0.5})) })
-    var b = mem(function(player) { return sample(Exponential({a: 0.5})) })
+var processData = function(data, columns) {
 
-    var points = mem(function(player, game) {
-        return Gaussian({
-            mu: a(player) * skill(player),
-            sigma: 5
-        })
-    })
-
-    var assists = mem(function(player, game) {
-        return Gaussian({
-            mu: b(player) * skill(player),
-            sigma: 3,
-        })
-    })
+    var result = []
 
     mapN(function(index) {
         if (index == 0)
@@ -37,42 +20,107 @@ var model = function() {
         // Condition on current player stats
         var current = _.zipObject(columns, data[index])
 
-        mapObject(function(key) {
-            var value = current[key]
-            
-            if (key == 'playPTS') { // TODO REMOVE
-                observe(points(current['playDispNm'], current['gameNum']), value)
-            }
-
-            if (key == 'playAST') {
-                observe(assists(current['playDispNm'], current['gameNum']), value)
-            }
-
-        }, current)
+        result.push(current)
 
         // At end of game, conditon on win/loss
-        // TODO
+        // TODO - TEAM MODEL
     }, data.length - 1)
 
-    // Return distributions
-    return skill('Kyrie Irving')
-    // return {
-    //     '1': skill('Aron Baynes'),
-    //     // '2': health('Jeff Green'),
-    //     '3': skill('Kyrie Irving'),
-    //     // '4': health('Lebron James'),
-    //     '5': a('Aron Baynes'),
-    //     // '6': b('Jeff Green'),
-    //     '7': a('Kyrie Irving'),
-    //     // '8': b('Lebron James'),
-    //     'random': a('new player'),
-    // }
-
+    return result
 }
 
-var posterior = Infer(options, model)
-viz.density(posterior, {
-    bounds: [0, 20],
-})
-viz.marginals(posterior)
-viz.auto(posterior)
+var dataProcessed = processData(data, columns)
+
+var makeModel = function(p) {
+    return function() {
+
+        // Latent
+        var skill = mem(function(player) {
+            return sample(Exponential({a: 1}))
+        })
+
+        var agression = mem(function(player) {
+            return sample(Gaussian({mu: 0.5, sigma: 0.2}))
+        })
+
+        var iq = mem(function(player) {
+            return sample(Exponential({a: 1.5}))
+        })
+
+        // Weights
+        var skill_points = function() { return sample(Gaussian({mu: 10, sigma: 5})) }
+        var skill_assists = function() { return sample(Gaussian({mu: 5, sigma: 5})) }
+        var agression_points = function() { return sample(Gaussian({mu: 10, sigma: 5})) }
+        var iq_assists = function() { return sample(Gaussian({mu: 10, sigma: 5})) }
+
+
+        // Observed
+        var points = mem(function(player) {
+            return Gaussian({
+                mu: skill_points() * skill(player) + agression_points() * agression(player),
+                sigma: 5
+            })
+        })
+
+        var assists = mem(function(player) {
+            return Gaussian({
+                mu: skill_assists() * skill(player) + iq_assists() * iq(player),
+                sigma: 3,
+            })
+        })
+
+        // Data
+        mapN(function(i) {
+            var dict = dataProcessed[i]
+
+            var pts = dict['playPTS']
+            observe(points(dict['playDispNm']), pts)
+
+            var ast = dict['playAST']
+            observe(assists(dict['playDispNm']), ast)
+
+            // At end of game, conditon on win/loss
+            // TODO - TEAM MODEL
+        }, dataProcessed.length)
+
+        // Return distributions
+        return {
+            skill: skill(p),
+            agression: agression(p),
+            iq: iq(p),
+            skill_points: skill_points(),
+            skill_assists: skill_assists(),
+            agression_points: agression_points(),
+            iq_assists: iq_assists(),
+        }
+    }
+}
+
+var run = function(player) {
+    var model = makeModel(player)
+
+    var posterior = Infer(options, model)
+
+    viz.marginals(posterior)
+
+    display(player)
+
+    map(function(key) {
+        var dist = marginalize(posterior, key)
+        display(key)
+        display(expectation(dist))
+    }, [
+        'skill',
+        'agression',
+        'iq',
+        'skill_points',
+        'skill_assists',
+        'agression_points',
+        'iq_assists',
+    ])
+}
+
+// NAME = 'Aron Baynes'
+run('Lebron James')
+// run('Elfrid Payton')
+
