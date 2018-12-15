@@ -5,7 +5,7 @@ var options = {
     verbose: true,
 }
 
-var data = csv.read('../theLeague.csv')
+var data = csv.read('../theLeagueMinutes.csv')
 var columns = data[0]
 
 
