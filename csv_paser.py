@@ -63,32 +63,52 @@ def find_topk(df,segments, category="playPTS", k=7):
 def create_csv(df, top7, stats):
 
     d = {s:[] for s in stats}
-    d['gameNum'] = []
+
+    players = set()
+    for team in top7:
+        for player in team:
+            index = player[0]
+            name = df.iloc[index]['playDispNm']
+            players.add(name)
+
+    num_players = len(players)
+    players = list(players)
+    
+    players_to_use = set()
+    for i in range(len(players)//3):
+        players_to_use.add(players.pop())
+
+    keys = ["LeBron James",
+           "Klay Thompson",
+           "Danny Green",
+           "Al Horford",
+           "Dwight Howard",
+           "Dwayne Wade",
+           "Iman Shumpert",
+           "Elfrid Payton"]
+    for k in keys:
+        players_to_use.add(k)
+
 
     teams = dict()
     for team in top7:
         #first player's team
-        teamAbbr = team[0][2]
-        if teamAbbr not in teams:
-            teams[teamAbbr] = 1
-
-        
         for player in team:
             index = player[0]
+            player_name = df.iloc[index]['playDispNm']
+            if player_name not in players_to_use:
+                continue
             for stat in stats:
                 d[stat].append(df.iloc[index][stat])
-            d['gameNum'].append(teams[teamAbbr])
-
-        teams[teamAbbr] += 1
 
     df = pd.DataFrame(data=d)
     df.to_csv("theLeagueMinutes.csv", index=False)
 
 if __name__ == "__main__":
     filename = "./nba-players-stats/2017-18_playerBoxScore.csv"
-    stats = ['playDispNm', 'teamAbbr', 'teamLoc', 
-             'playStat', 'playMin', 'playHeight', 
+    stats = ['playDispNm', 'teamAbbr', 
+             'playMin', 
              'playPTS', 'playAST', 'playTO', 'playSTL', 
              'playBLK', 'playPF', 'playFGA', 'playFGM', 
-             'playFTA', 'playFTM','playTRB', 'opptAbbr', 'opptRslt']
+             'playTRB']
     parse(filename, stats)

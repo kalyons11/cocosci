@@ -1,6 +1,6 @@
 var options = {
     method: 'MCMC',
-    burn: 10,
+    burn: 1000,
     lag: 100,
     verbose: true,
 }
@@ -22,7 +22,7 @@ var processData = function(data, columns) {
 
         result.push(current)
 
-        // At end of game, conditon on win/loss
+         // At end of game, conditon on win/loss
         // TODO - TEAM MODEL
     }, data.length - 1)
 
@@ -47,12 +47,39 @@ var makeModel = function(p) {
             return sample(Exponential({a: 1.5}))
         })
 
+        var health = mem(function(player) {
+            return sample(Exponential({a: 1.5}))
+        })
+
         // Weights
+
         var skill_points = function() { return sample(Gaussian({mu: 10, sigma: 5})) }
-        var skill_assists = function() { return sample(Gaussian({mu: 5, sigma: 5})) }
         var agression_points = function() { return sample(Gaussian({mu: 10, sigma: 5})) }
+        
+        var skill_assists = function() { return sample(Gaussian({mu: 5, sigma: 5})) }
         var iq_assists = function() { return sample(Gaussian({mu: 10, sigma: 5})) }
 
+        var health_minutes = function() { return sample(Gaussian({mu: 10, sigma: 5})) }
+        var skill_minutes = function() { return sample(Gaussian({mu: 10, sigma: 5})) }
+
+        var agression_turnovers = function() { return sample(Gaussian({mu: 10, sigma: 5})) }
+        var iq_turnovers = function() { return sample(Gaussian({mu: 10, sigma: 5})) }
+        var skill_turnovers = function() { return sample(Gaussian({mu: 10, sigma: 5})) }
+
+        var agression_steals = function() { return sample(Gaussian({mu: 10, sigma: 5})) }
+        var iq_steals = function() { return sample(Gaussian({mu: 10, sigma: 5})) }
+        var skill_steals = function() { return sample(Gaussian({mu: 10, sigma: 5})) }
+
+        var agression_rebounds = function() { return sample(Gaussian({mu: 10, sigma: 5})) }
+        var iq_rebounds = function() { return sample(Gaussian({mu: 10, sigma: 5})) }
+        var health_rebounds = function() { return sample(Gaussian({mu: 10, sigma: 5})) }
+
+        var agression_fouls = function() { return sample(Gaussian({mu: 10, sigma: 5})) }
+        var iq_fouls = function() { return sample(Gaussian({mu: 10, sigma: 5})) }
+
+        var iq_shots = function() { return sample(Gaussian({mu: 10, sigma: 5})) }
+        var skill_shots = function() { return sample(Gaussian({mu: 10, sigma: 5})) }
+        var health_shots = function() { return sample(Gaussian({mu: 10, sigma: 5})) }
 
         // Observed
         var points = mem(function(player) {
@@ -69,6 +96,48 @@ var makeModel = function(p) {
             })
         })
 
+        var minutes = mem(function(player) {
+            return Gaussian({
+                mu: health_minutes() * health(player) + skill_minutes() * skill(player),
+                sigma: 2
+            })
+        })
+
+        var turnovers = mem(function(player) {
+            return Gaussian({
+                mu: agression_turnovers() * agression(player) - iq_turnovers() * iq(player) - skill_turnovers() * skill(player),
+                sigma: 3
+            })
+        })
+
+        var steals = mem(function(player) {
+            return Gaussian({
+                mu: - agression_steals() * agression(player) + iq_steals() * iq(player) + skill_steals() * skill(player),
+                sigma: 5
+            })
+        })
+
+        var rebounds = mem(function(player) {
+            return Gaussian({
+                mu: agression_rebounds() * agression(player) + iq_rebounds() * iq(player) - health_rebounds() * health(player),
+                sigma: 3
+            })
+        })
+
+        var fouls = mem(function(player) {
+            return Gaussian({
+                mu: agression_fouls() * agression(player) - iq_fouls() * iq(player),
+                sigma: 3
+            })
+        })
+
+        var shots = mem(function(player) {
+            return Gaussian({
+                mu: iq_shots() * iq(player) + skill_shots() * skill(player) - health_shots() * health(player),
+                sigma: 2
+            })
+        })
+
         // Data
         mapN(function(i) {
             var dict = dataProcessed[i]
@@ -79,6 +148,24 @@ var makeModel = function(p) {
             var ast = dict['playAST']
             observe(assists(dict['playDispNm']), ast)
 
+            var min = dict['playMin']
+            observe(minutes(dict['playDispNm']), min)
+
+            var turn = dict['playTO']
+            observe(turnovers(dict['playDispNm']), turn)
+
+            var stl = dict['playSTL']
+            observe(steals(dict['playDispNm']), stl)
+
+            var reb = dict['playTRB']
+            observe(rebounds(dict['playDispNm']), reb)
+
+            var pf = dict['playPF'] // fouls
+            observe(fouls(dict['playDispNm']), pf)
+
+            var fgp = dict['playFGM'] / (dict['playFGA'] + 1)
+            observe(shots(dict['playDispNm']), fgp)
+
             // At end of game, conditon on win/loss
             // TODO - TEAM MODEL
         }, dataProcessed.length)
@@ -88,10 +175,27 @@ var makeModel = function(p) {
             skill: skill(p),
             agression: agression(p),
             iq: iq(p),
+            health: health(p),
             skill_points: skill_points(),
             skill_assists: skill_assists(),
             agression_points: agression_points(),
             iq_assists: iq_assists(),
+            health_minutes: health_minutes(),
+            skill_minutes: skill_minutes(),
+            agression_turnovers:agression_turnovers(),
+            iq_turnovers: iq_turnovers(),
+            skill_turnovers: skill_turnovers(),
+            agression_steals: agression_steals(),
+            iq_steals: iq_steals(),
+            skill_steals: skill_steals(),
+            agression_rebounds: agression_rebounds(),
+            iq_rebounds: iq_rebounds(),
+            health_rebounds: health_rebounds(),
+            agression_fouls: agression_fouls(),
+            iq_fouls: iq_fouls(),
+            iq_shots: iq_shots(),
+            skill_shots: skill_shots(),
+            health_shots: health_shots(),
         }
     }
 }
@@ -101,7 +205,7 @@ var run = function(player) {
 
     var posterior = Infer(options, model)
 
-    viz.marginals(posterior)
+    viz.marginals(posterior, {fileName: player})
 
     display(player)
 
@@ -113,14 +217,37 @@ var run = function(player) {
         'skill',
         'agression',
         'iq',
+        'health',
         'skill_points',
         'skill_assists',
         'agression_points',
         'iq_assists',
+        'health_minutes',
+        'skill_minutes',
+        'agression_turnovers',
+        'iq_turnovers',
+        'skill_turnovers',
+        'agression_steals',
+        'iq_steals',
+        'skill_steals',
+        'agression_rebounds',
+        'iq_rebounds',
+        'health_rebounds',
+        'agression_fouls',
+        'iq_fouls',
+        'iq_shots',
+        'skill_shots',
+        'health_shots',
     ])
 }
 
 // NAME = 'Aron Baynes'
-run('Lebron James')
+// run('LeBron James')
+// run('Danny Green')
+// run('Klay Thompson')
+// run('Al Horford')
+run('Dwight Howard')
+// run('Dwyane Wade')
+// run('Iman Shumpert')
 // run('Elfrid Payton')
 
