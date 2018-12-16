@@ -107,7 +107,7 @@ def create_csv(df, top7, stats):
 if __name__ == "__main__":
     filename = "./nba-players-stats/2017-18_playerBoxScore.csv"
     stats = ['playDispNm', 'teamAbbr', 
-             'playMin', 
+             'playMin', 'playHeight',
              'playPTS', 'playAST', 'playTO', 'playSTL', 
              'playBLK', 'playPF', 'playFGA', 'playFGM', 
              'playTRB']

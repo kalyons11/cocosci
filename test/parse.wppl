@@ -44,11 +44,11 @@ var makeModel = function(p) {
         })
 
         var iq = mem(function(player) {
-            return sample(Exponential({a: 1.5}))
+            return sample(Exponential({a: 1}))
         })
 
         var health = mem(function(player) {
-            return sample(Exponential({a: 1.5}))
+            return sample(Gaussian({mu: 0.5, sigma: 0.2}))
         })
 
         // Weights
@@ -68,7 +68,6 @@ var makeModel = function(p) {
 
         var agression_steals = function() { return sample(Gaussian({mu: 10, sigma: 5})) }
         var iq_steals = function() { return sample(Gaussian({mu: 10, sigma: 5})) }
-        var skill_steals = function() { return sample(Gaussian({mu: 10, sigma: 5})) }
 
         var agression_rebounds = function() { return sample(Gaussian({mu: 10, sigma: 5})) }
         var iq_rebounds = function() { return sample(Gaussian({mu: 10, sigma: 5})) }
@@ -80,6 +79,10 @@ var makeModel = function(p) {
         var iq_shots = function() { return sample(Gaussian({mu: 10, sigma: 5})) }
         var skill_shots = function() { return sample(Gaussian({mu: 10, sigma: 5})) }
         var health_shots = function() { return sample(Gaussian({mu: 10, sigma: 5})) }
+
+        var agression_height = function() { return sample(Gaussian({mu: 10, sigma: 5})) }
+        var iq_height = function() { return sample(Gaussian({mu: 10, sigma: 5})) }
+        var health_height = function() { return sample(Gaussian({mu: 10, sigma: 5})) }
 
         // Observed
         var points = mem(function(player) {
@@ -112,15 +115,15 @@ var makeModel = function(p) {
 
         var steals = mem(function(player) {
             return Gaussian({
-                mu: - agression_steals() * agression(player) + iq_steals() * iq(player) + skill_steals() * skill(player),
+                mu: agression_steals() * agression(player) + iq_steals() * iq(player),
                 sigma: 5
             })
         })
 
         var rebounds = mem(function(player) {
             return Gaussian({
-                mu: agression_rebounds() * agression(player) + iq_rebounds() * iq(player) - health_rebounds() * health(player),
-                sigma: 3
+                mu: agression_rebounds() * agression(player) + iq_rebounds() * iq(player) + health_rebounds() * health(player),
+                sigma: 5
             })
         })
 
@@ -133,7 +136,14 @@ var makeModel = function(p) {
 
         var shots = mem(function(player) {
             return Gaussian({
-                mu: iq_shots() * iq(player) + skill_shots() * skill(player) - health_shots() * health(player),
+                mu: iq_shots() * iq(player) + skill_shots() * skill(player) + health_shots() * health(player),
+                sigma: 2
+            })
+        })
+
+        var height = mem(function(player) {
+            return Gaussian({
+                mu: agression_height() * agression(player) - iq_height() * iq(player) - health_height() * health(player),
                 sigma: 2
             })
         })
@@ -166,6 +176,9 @@ var makeModel = function(p) {
             var fgp = dict['playFGM'] / (dict['playFGA'] + 1)
             observe(shots(dict['playDispNm']), fgp)
 
+            var tallness = dict['playHeight']
+            observe(shots(dict['playDispNm']), fgp)
+
             // At end of game, conditon on win/loss
             // TODO - TEAM MODEL
         }, dataProcessed.length)
@@ -187,7 +200,6 @@ var makeModel = function(p) {
             skill_turnovers: skill_turnovers(),
             agression_steals: agression_steals(),
             iq_steals: iq_steals(),
-            skill_steals: skill_steals(),
             agression_rebounds: agression_rebounds(),
             iq_rebounds: iq_rebounds(),
             health_rebounds: health_rebounds(),
@@ -196,6 +208,9 @@ var makeModel = function(p) {
             iq_shots: iq_shots(),
             skill_shots: skill_shots(),
             health_shots: health_shots(),
+            agression_height: agression_height(),
+            iq_height: iq_height(),
+            health_height: health_height(),
         }
     }
 }
@@ -229,7 +244,6 @@ var run = function(player) {
         'skill_turnovers',
         'agression_steals',
         'iq_steals',
-        'skill_steals',
         'agression_rebounds',
         'iq_rebounds',
         'health_rebounds',
@@ -238,6 +252,9 @@ var run = function(player) {
         'iq_shots',
         'skill_shots',
         'health_shots',
+        'agression_height',
+        'iq_height',
+        'health_height'
     ])
 }
 
@@ -245,8 +262,8 @@ var run = function(player) {
 // run('LeBron James')
 // run('Danny Green')
 // run('Klay Thompson')
-// run('Al Horford')
-run('Dwight Howard')
+run('Al Horford')
+// run('Dwight Howard')
 // run('Dwyane Wade')
 // run('Iman Shumpert')
 // run('Elfrid Payton')
