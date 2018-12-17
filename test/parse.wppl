@@ -22,8 +22,6 @@ var processData = function(data, columns) {
 
         result.push(current)
 
-         // At end of game, conditon on win/loss
-        // TODO - TEAM MODEL
     }, data.length - 1)
 
     return result
@@ -259,10 +257,10 @@ var run = function(player) {
 }
 
 // NAME = 'Aron Baynes'
-// run('LeBron James')
+run('LeBron James')
 // run('Danny Green')
 // run('Klay Thompson')
-run('Al Horford')
+// run('Al Horford')
 // run('Dwight Howard')
 // run('Dwyane Wade')
 // run('Iman Shumpert')
